@@ -73,6 +73,35 @@ pub fn overlay<I: GenericImage>(bottom: &mut I, top: &I, x: u32, y: u32) {
     }
 }
 
+/// Difference with an image
+pub fn difference<I: GenericImage>(bottom: &mut I, top: &I) {
+    let (top_width, top_height) = top.dimensions();
+    let (bottom_width, bottom_height) = bottom.dimensions();
+
+    // Crop our top image if we're going out of bounds
+    let range_width = if top_width > bottom_width {
+        bottom_width
+    } else {
+        top_width
+    };
+
+    let range_height = if top_height > bottom_height {
+        bottom_height
+    } else {
+        top_height
+    };
+
+    for top_y in 0..range_height {
+        for top_x in 0..range_width {
+            let p = top.get_pixel(top_x, top_y);
+            let mut bottom_pixel = bottom.get_pixel(top_x, top_y);
+            bottom_pixel.difference(&p);
+
+            bottom.put_pixel(top_x, top_y, bottom_pixel);
+        }
+    }
+}
+
 /// Replace the contents of an image at a given coordinate (x, y)
 pub fn replace<I: GenericImage>(bottom: &mut I, top: &I, x: u32, y: u32) {
     let (top_width, top_height) = top.dimensions();

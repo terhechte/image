@@ -129,6 +129,8 @@ pub trait Pixel: Copy + Clone {
 
     /// Blend the color of a given pixel into ourself, taking into account alpha channels
     fn blend(&mut self, other: &Self);
+
+    fn difference(&mut self, other: &Self);
 }
 
 /// Iterate over pixel refs.

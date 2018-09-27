@@ -202,6 +202,10 @@ impl<T: Primitive + 'static> Pixel for $ident<T> {
     fn blend(&mut self, other: &$ident<T>) {
         Blend::blend(self, other)
     }
+
+    fn difference(&mut self, other: &$ident<T>) {
+       Blend::blend(self, other)
+    }
 }
 
 impl<T: Primitive> Index<usize> for $ident<T> {
@@ -585,6 +589,12 @@ pub trait Blend {
     fn blend(&mut self, other: &Self);
 }
 
+/// Difference subtracts the bottom layer from the top layer or the other way round, to always get a positive value
+pub trait Difference {
+    /// Difference subtracts the bottom layer from the top layer or the other way round, to always get a positive value
+    fn difference(&mut self, other: &Self);
+}
+
 impl<T: Primitive> Blend for LumaA<T> {
     fn blend(&mut self, other: &LumaA<T>) {
         let max_t = T::max_value();
@@ -618,11 +628,26 @@ impl<T: Primitive> Blend for LumaA<T> {
     }
 }
 
+impl<T: Primitive> Difference for LumaA<T> {
+    fn difference(&mut self, other: &Self) {
+        // FIXME:
+        *self = *other;
+    }
+}
+
 impl<T: Primitive> Blend for Luma<T> {
     fn blend(&mut self, other: &Luma<T>) {
         *self = *other
     }
 }
+
+impl<T: Primitive> Difference for Luma<T> {
+    fn difference(&mut self, other: &Self) {
+        // FIXME:
+        *self = *other;
+    }
+}
+
 
 impl<T: Primitive> Blend for Rgba<T> {
     fn blend(&mut self, other: &Rgba<T>) {
@@ -680,6 +705,36 @@ impl<T: Primitive> Blend for Rgba<T> {
     }
 }
 
+impl<T: Primitive> Difference for Rgba<T> {
+    fn difference(&mut self, other: &Self) {
+        let max_t = T::max_value();
+        let max_t = max_t.to_f32().unwrap();
+        let (bg_r, bg_g, bg_b, bg_a) = (self.data[0], self.data[1], self.data[2], self.data[3]);
+        let (fg_r, fg_g, fg_b, fg_a) = (other.data[0], other.data[1], other.data[2], other.data[3]);
+        let (bg_r, bg_g, bg_b, bg_a) = (
+            bg_r.to_f32().unwrap() / max_t,
+            bg_g.to_f32().unwrap() / max_t,
+            bg_b.to_f32().unwrap() / max_t,
+            bg_a.to_f32().unwrap() / max_t,
+        );
+        let (fg_r, fg_g, fg_b, fg_a) = (
+            fg_r.to_f32().unwrap() / max_t,
+            fg_g.to_f32().unwrap() / max_t,
+            fg_b.to_f32().unwrap() / max_t,
+            fg_a.to_f32().unwrap() / max_t,
+        );
+
+        let (out_r, out_g, out_b) = ((bg_r - fg_r).abs(), (bg_g - fg_g).abs(), (bg_b - fg_b).abs());
+
+        // Cast back to our initial type on return
+        *self = Rgba([
+            NumCast::from(max_t * out_r).unwrap(),
+            NumCast::from(max_t * out_g).unwrap(),
+            NumCast::from(max_t * out_b).unwrap(),
+            NumCast::from(max_t * bg_a).unwrap(),
+        ])
+    }
+}
 
 
 impl<T: Primitive> Blend for Bgra<T> {
@@ -738,9 +793,23 @@ impl<T: Primitive> Blend for Bgra<T> {
     }
 }
 
+impl<T: Primitive> Difference for Bgra<T> {
+    fn difference(&mut self, other: &Self) {
+        // FIXME:
+        *self = *other;
+    }
+}
+
 impl<T: Primitive> Blend for Rgb<T> {
     fn blend(&mut self, other: &Rgb<T>) {
         *self = *other
+    }
+}
+
+impl<T: Primitive> Difference for Rgb<T> {
+    fn difference(&mut self, other: &Self) {
+        // FIXME:
+        *self = *other;
     }
 }
 
@@ -750,6 +819,12 @@ impl<T: Primitive> Blend for Bgr<T> {
     }
 }
 
+impl<T: Primitive> Difference for Bgr<T> {
+    fn difference(&mut self, other: &Self) {
+        // FIXME:
+        *self = *other;
+    }
+}
 
 /// Invert a color
 pub trait Invert {
